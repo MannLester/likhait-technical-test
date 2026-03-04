@@ -110,3 +110,26 @@ export async function deleteExpense(id: number): Promise<void> {
     throw new Error("Failed to delete expense");
   }
 }
+
+/**
+ * Create category
+ */
+export async function createCategory(
+  name: string,
+): Promise<{ id: number; name: string }> {
+  const response = await fetch(`${API_BASE_URL}/categories`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ category: { name } }),
+  });
+
+  if (!response.ok) {
+    // Parse the error response to get validation messages from the backend
+    const errorData = await response.json();
+    throw new Error(errorData.errors?.join(", ") || "Failed to create category");
+  }
+
+  return response.json();
+}

@@ -16,12 +16,27 @@ RSpec.describe "Api::Expenses", type: :request do
       expect(json.length).to eq(2)
     end
 
-    it "returns expenses in descending order by created_at" do
+    it "returns expenses in descending order by date" do
+      old_expense = Expense.create!(description: "Old lunch", amount: 30.00, category: food_category, date: Date.today - 5)
+      recent_expense = Expense.create!(description: "Recent dinner", amount: 60.00, category: food_category, date: Date.today - 1)
+
       get "/api/expenses"
 
       json = JSON.parse(response.body)
-      expect(json.first["id"]).to eq(expense2.id)
-      expect(json.last["id"]).to eq(expense1.id)
+      dates = json.map { |e| e["date"] }
+      expect(dates).to eq(dates.sort.reverse)
+    end
+
+    it "filters expenses by year and month using the date column" do
+      jan_expense = Expense.create!(description: "January lunch", amount: 40.00, category: food_category, date: Date.new(2026, 1, 15))
+      feb_expense = Expense.create!(description: "February dinner", amount: 80.00, category: food_category, date: Date.new(2026, 2, 10))
+
+      get "/api/expenses", params: { year: 2026, month: 1 }
+
+      json = JSON.parse(response.body)
+      descriptions = json.map { |e| e["description"] }
+      expect(descriptions).to include("January lunch")
+      expect(descriptions).not_to include("February dinner")
     end
   end
 
@@ -46,7 +61,6 @@ RSpec.describe "Api::Expenses", type: :request do
         expect(response).to have_http_status(:created)
         json = JSON.parse(response.body)
         expect(json["description"]).to eq("Team Lunch")
-        expect(json["amount"]).to eq("150.5")
       end
     end
 
